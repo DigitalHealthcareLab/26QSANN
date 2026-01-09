@@ -5,3 +5,8 @@
 /__pycache__
 /results/models
 /logs
+
+# exclude large data files
+*.tar.gz
+*.zip
+data/cifar-10-python.tar.gz
