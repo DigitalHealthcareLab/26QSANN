@@ -1,18 +1,109 @@
-# QSANN Usage Guide
+# Development and Validation of Interpretable Quantum Self-Attention Neural Networks for Image Classification
 
 ## Overview
-Training and evaluation code for QSANN (Quantum Self-Attention Neural Network) and baseline models.
 
-## Model Types
-- **QSANN** (`main.py`)
-- **CNN** (`baselines/CNN.py`)
-- **CSANN** (`baselines/CSANN.py`)
-- **GQHAN** (`baselines/GQHAN.py`)
-- **QSAN** (`baselines/QSAN.py`)
+This repository contains the implementation of Quantum Self-Attention Neural Network (QSANN) for image classification tasks.
 
-## Basic Usage
+## Model Architecture
 
-### 1. Train QSANN
+![QSANN Model Architecture](Figure1.jpg)
+
+## Environment Setup
+
+Create and activate the conda environment using the provided environment file:
+
+```bash
+conda env create -f environment.yml
+conda activate qsann
+```
+
+## Experiment Reproduction
+
+### Multi-Class Classification Tasks
+
+#### 1. Small MNIST (8×8)
+```bash
+python main.py \
+  --dataset-choice mnist \
+  --classification-task multi \
+  --train-count 320 \
+  --val-count 0 \
+  --test-count 80 \
+  --image-size 8 \
+  --patch-size 4 \
+  --num-qubits 8 \
+  --vqc-layers 4 \
+  --reuploading 2 \
+  --attn-layers 1 \
+  --epochs 30 \
+  --batch-size 16 \
+  --learning-rate 0.01 \
+  --seed 42
+```
+
+#### 2. MNIST (28×28)
+```bash
+python main.py \
+  --dataset-choice mnist \
+  --classification-task multi \
+  --train-count 320 \
+  --val-count 0 \
+  --test-count 80 \
+  --image-size 28 \
+  --patch-size 4 \
+  --num-qubits 8 \
+  --vqc-layers 4 \
+  --reuploading 2 \
+  --attn-layers 1 \
+  --epochs 30 \
+  --batch-size 16 \
+  --learning-rate 0.01 \
+  --seed 42
+```
+
+#### 3. Fashion-MNIST
+```bash
+python main.py \
+  --dataset-choice fmnist \
+  --classification-task multi \
+  --train-count 320 \
+  --val-count 0 \
+  --test-count 80 \
+  --image-size 28 \
+  --patch-size 4 \
+  --num-qubits 8 \
+  --vqc-layers 4 \
+  --reuploading 2 \
+  --attn-layers 1 \
+  --epochs 30 \
+  --batch-size 16 \
+  --learning-rate 0.01 \
+  --seed 42
+```
+
+#### 4. CIFAR-10
+```bash
+python main.py \
+  --dataset-choice cifar10 \
+  --classification-task multi \
+  --train-count 320 \
+  --val-count 0 \
+  --test-count 80 \
+  --image-size 32 \
+  --patch-size 4 \
+  --num-qubits 8 \
+  --vqc-layers 4 \
+  --reuploading 2 \
+  --attn-layers 1 \
+  --epochs 30 \
+  --batch-size 16 \
+  --learning-rate 0.01 \
+  --seed 42
+```
+
+### Binary Classification Tasks
+
+#### 1. MNIST
 ```bash
 python main.py \
   --dataset-choice mnist \
@@ -25,89 +116,80 @@ python main.py \
   --num-qubits 8 \
   --vqc-layers 1 \
   --reuploading 3 \
+  --attn-layers 1 \
   --epochs 300 \
   --batch-size 32 \
   --learning-rate 0.05 \
-  --device cuda:0
+  --seed 42 \
+  --early-stop \
+  --early-stop-patience 10
 ```
 
-### 2. Train CNN Baseline
+#### 2. Fashion-MNIST
 ```bash
-python baselines/CNN.py \
-  --dataset-choice cifar10 \
-  --train-count 1000 \
-  --val-count 100 \
-  --test-count 100 \
-  --image-size 32 \
-  --batch-size 16 \
-  --epochs 30 \
-  --learning-rate 0.001 \
-  --device cuda:0
-```
-
-### 3. Train CSANN Baseline
-```bash
-python baselines/CSANN.py \
-  --dataset-choice mnist \
+python main.py \
+  --dataset-choice fmnist \
+  --classification-task binary \
   --train-count 1000 \
   --val-count 100 \
   --test-count 100 \
   --image-size 28 \
   --patch-size 4 \
+  --num-qubits 8 \
+  --vqc-layers 3 \
+  --reuploading 3 \
   --attn-layers 1 \
-  --hidden-dim 64 \
-  --epochs 30 \
-  --device cuda:0
+  --epochs 300 \
+  --batch-size 32 \
+  --learning-rate 0.05 \
+  --seed 42 \
+  --early-stop \
+  --early-stop-patience 10
 ```
 
-### 4. Train GQHAN Baseline
+#### 3. CIFAR-10
 ```bash
-python baselines/GQHAN.py \
-  --dataset-choice mnist \
-  --train-count 1000 \
-  --val-count 100 \
-  --test-count 100 \
-  --pca-dim 8 \
-  --epochs 30 \
-  --device cuda:0
-```
-
-### 5. Train QSAN Baseline
-```bash
-python baselines/QSAN.py \
-  --dataset-choice mnist \
+python main.py \
+  --dataset-choice cifar10 \
+  --classification-task binary \
   --train-count 1000 \
   --val-count 100 \
   --test-count 100 \
   --image-size 28 \
   --patch-size 4 \
-  --n-qubits 4 \
-  --epochs 30 \
-  --device cuda:0
+  --num-qubits 8 \
+  --vqc-layers 3 \
+  --reuploading 3 \
+  --attn-layers 1 \
+  --epochs 300 \
+  --batch-size 32 \
+  --learning-rate 0.05 \
+  --seed 42 \
+  --early-stop \
+  --early-stop-patience 10
 ```
 
-## Key Arguments
-
-### Common Options
-- `--dataset-choice`: Dataset selection (`mnist`, `fmnist`, `cifar10`, `pcam`)
-- `--train-count`, `--val-count`, `--test-count`: Number of train/validation/test samples
-- `--batch-size`: Batch size
-- `--epochs`: Number of training epochs
-- `--learning-rate`: Learning rate
-- `--device`: Device for training (`cpu`, `cuda:0`)
-- `--seed`: Random seed for reproducibility
-- `--early-stop`: Enable early stopping
-
-### QSANN-Specific Options
-- `--num-qubits`: Number of qubits
-- `--vqc-layers`: Number of VQC layers
-- `--reuploading`: Number of data encoding repetitions
-- `--attn-layers`: Number of attention layers
-- `--classification-task`: Classification task (`binary` or `multi`)
-
-### Data Filtering
-- `--dataset-labels`: Use only specific labels (e.g., `--dataset-labels 0 1`)
-- `--samples-per-label`: Limit samples per label
+#### 4. PCam
+```bash
+python main.py \
+  --dataset-choice pcam \
+  --classification-task binary \
+  --train-count 1000 \
+  --val-count 100 \
+  --test-count 100 \
+  --image-size 28 \
+  --patch-size 4 \
+  --num-qubits 8 \
+  --vqc-layers 4 \
+  --reuploading 1 \
+  --attn-layers 1 \
+  --epochs 300 \
+  --batch-size 16 \
+  --learning-rate 0.05 \
+  --seed 42 \
+  --early-stop \
+  --early-stop-patience 10
+```
 
 ## Output
 - Training logs: `results/logs/` directory
