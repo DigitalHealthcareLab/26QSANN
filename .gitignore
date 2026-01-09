@@ -3,5 +3,5 @@
 /scripts
 /baselines
 /__pycache__
-/results
+/results/models
 /logs
