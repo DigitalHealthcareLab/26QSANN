@@ -8,6 +8,8 @@ Simple self-attention classifier extracted from the JYJ CSANN notebook.
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
 import copy
 import os
 import random
@@ -26,6 +28,10 @@ from sklearn.metrics import (
 )
 from torch import nn, optim
 from torch.utils.data import Dataset
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 from data_loader import build_standard_loaders
 
@@ -345,9 +351,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--image-size", type=int, default=28)
     parser.add_argument("--patch-size", type=int, default=4)
-    parser.add_argument("--train-count", type=int, required=True, help="Absolute train size.")
-    parser.add_argument("--val-count", type=int, required=True, help="Absolute val size.")
-    parser.add_argument("--test-count", type=int, required=True, help="Absolute test size.")
+    parser.add_argument("--train-count", type=int, default=320, help="Absolute train size.")
+    parser.add_argument("--val-count", type=int, default=0, help="Absolute val size.")
+    parser.add_argument("--test-count", type=int, default=80, help="Absolute test size.")
     parser.add_argument("--num-workers", type=int, default=2)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--seed", type=int, default=42)
@@ -364,7 +370,7 @@ def parse_args() -> argparse.Namespace:
 
     # Optimization / training
     parser.add_argument("--epochs", type=int, default=30)
-    parser.add_argument("--learning-rate", type=float, default=1e-3)
+    parser.add_argument("--learning-rate", type=float, default=0.01)
     parser.add_argument("--early-stop", action="store_true")
     parser.add_argument("--early-stop-patience", type=int, default=10)
     parser.add_argument("--early-stop-min-delta", type=float, default=0.0)

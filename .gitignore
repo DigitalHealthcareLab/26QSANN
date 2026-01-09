@@ -1,4 +1,7 @@
 
 # exclude data directory
-/data
 /scripts
+/baselines
+/__pycache__
+/results
+/logs

@@ -565,22 +565,28 @@ def build_standard_loaders(
     balance_sampler: bool = False,
     binary_root: str | Path | None = None,
     multi_root: str | Path | None = None,
+    classification_task: str | None = None,
 ) -> Tuple[Tuple[DataLoader, Dataset], Tuple[DataLoader, Dataset], Tuple[DataLoader, Dataset]]:
     """
     Construct DataLoaders from prepared Binary_dataset or Multi_dataset splits.
     """
-    choice = dataset_choice.lower()
-    if choice == "pcam":
-        task = "binary"
-    elif dataset_labels is not None:
-        if len(dataset_labels) == 2:
-            task = "binary"
-        elif len(dataset_labels) == 10:
-            task = "multi"
-        else:
-            raise ValueError("dataset_labels must have length 2 (binary) or 10 (multi).")
+    if classification_task is not None:
+        task = classification_task.lower()
+        if task not in ("binary", "multi"):
+            raise ValueError("classification_task must be 'binary' or 'multi'.")
     else:
-        task = "multi"
+        choice = dataset_choice.lower()
+        if choice == "pcam":
+            task = "binary"
+        elif dataset_labels is not None:
+            if len(dataset_labels) == 2:
+                task = "binary"
+            elif len(dataset_labels) == 10:
+                task = "multi"
+            else:
+                raise ValueError("dataset_labels must have length 2 (binary) or 10 (multi).")
+        else:
+            task = "multi"
 
     if train_count is None or val_count is None or test_count is None:
         raise ValueError("train_count, val_count, and test_count are required when using prepared datasets.")

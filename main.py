@@ -23,12 +23,12 @@ def build_parser() -> argparse.ArgumentParser:
     default_multi_root = Path(__file__).resolve().parent / "data" / "Multi_dataset"
 
     # Data
-    parser.add_argument("--image-size", type=int, default=28)
+    parser.add_argument("--image-size", type=int, default=32)
     parser.add_argument("--patch-size", type=int, default=4)
     parser.add_argument(
         "--dataset-choice",
         type=str,
-        default="mnist",
+        default="cifar10",
         choices=["mnist", "fmnist", "cifar10", "pcam"],
         help="Choose dataset source.",
     )
@@ -104,7 +104,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--device", type=str, default="cuda:0", choices=["cpu", "cuda:0"])
     parser.add_argument("--early-stop", action="store_true")
     parser.add_argument("--early-stop-patience", type=int, default=10)
-    parser.add_argument("--early-stop-min-delta", type=float, default=0.0)
+    parser.add_argument("--early-stop-min-delta", type=float, default=0.0001)
     parser.add_argument("--no-pos-weight", action="store_true", help="Disable class-balanced pos_weight in BCE loss.")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
     parser.add_argument("--num-classes", type=int, default=10, help="If >0, override inferred class count.")
@@ -150,6 +150,7 @@ def main() -> None:
             balance_sampler=balance_sampler,
             binary_root=cfg.binary_data_root,
             multi_root=cfg.multi_data_root,
+            classification_task=cfg.classification_task,
         )
 
         def collect_labels(ds: Dataset) -> list[int]:
@@ -173,10 +174,16 @@ def main() -> None:
         total_samples = len(all_labels)
         label_counts = Counter(all_labels)
         inferred_classes = len(label_counts) if label_counts else 0
-        num_classes = cfg.num_classes if cfg.num_classes > 0 else inferred_classes
-        if num_classes < 2:
-            raise ValueError(f"num_classes must be >=2 (inferred {inferred_classes}, override with --num-classes).")
-        is_binary = num_classes == 2
+        if cfg.classification_task == "binary":
+            num_classes = 2
+            is_binary = True
+        else:
+            num_classes = cfg.num_classes if cfg.num_classes > 0 else inferred_classes
+            if num_classes < 2:
+                raise ValueError(
+                    f"num_classes must be >=2 (inferred {inferred_classes}, override with --num-classes)."
+                )
+            is_binary = False
         dataset_tag = cfg.dataset_choice
         if cfg.dataset_labels:
             label_tag = "-".join(str(l) for l in cfg.dataset_labels)
