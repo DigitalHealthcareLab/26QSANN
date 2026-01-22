@@ -118,7 +118,7 @@ python main.py \
   --reuploading 3 \
   --attn-layers 1 \
   --epochs 300 \
-  --batch-size 32 \
+  --batch-size 16 \
   --learning-rate 0.05 \
   --seed 42 \
   --early-stop \
@@ -185,7 +185,7 @@ python main.py \
   --attn-layers 1 \
   --epochs 300 \
   --batch-size 16 \
-  --learning-rate 0.05 \
+  --learning-rate 0.01 \
   --seed 42 \
   --early-stop \
   --early-stop-patience 10

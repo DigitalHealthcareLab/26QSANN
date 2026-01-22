@@ -23,19 +23,19 @@ def build_parser() -> argparse.ArgumentParser:
     default_multi_root = Path(__file__).resolve().parent / "data" / "Multi_dataset"
 
     # Data
-    parser.add_argument("--image-size", type=int, default=32)
+    parser.add_argument("--image-size", type=int, default=28)
     parser.add_argument("--patch-size", type=int, default=4)
     parser.add_argument(
         "--dataset-choice",
         type=str,
-        default="cifar10",
+        default="mnist",
         choices=["mnist", "fmnist", "cifar10", "pcam"],
         help="Choose dataset source.",
     )
     parser.add_argument(
         "--classification-task",
         type=str,
-        default="multi",
+        default="binary",
         choices=["binary", "multi"],
         help="Classification task: binary or multi.",
     )
@@ -64,15 +64,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     # Quantum ansatz
     parser.add_argument("--num-qubits", type=int, default=8)
-    parser.add_argument("--vqc-layers", type=int, default=4)
-    parser.add_argument("--reuploading", type=int, default=2, help="Number of times to repeat data encoding + VQC block.")
+    parser.add_argument("--vqc-layers", type=int, default=1)
+    parser.add_argument("--reuploading", type=int, default=3, help="Number of times to repeat data encoding + VQC block.")
     parser.add_argument("--backend-device", type=str, default="gpu", choices=["cpu", "gpu"])
     parser.add_argument("--use-torch-autograd", action="store_true", default=True)
 
     # Data split (counts only)
-    parser.add_argument("--train-count", type=int, default=320, help="Number of training samples.")
-    parser.add_argument("--val-count", type=int, default=0, help="Number of validation samples.")
-    parser.add_argument("--test-count", type=int, default=80, help="Number of test samples.")
+    parser.add_argument("--train-count", type=int, default=1000, help="Number of training samples.")
+    parser.add_argument("--val-count", type=int, default=100, help="Number of validation samples.")
+    parser.add_argument("--test-count", type=int, default=100, help="Number of test samples.")
 
     # Attention
     parser.add_argument("--attn-layers", type=int, default=1)
@@ -97,11 +97,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Training
-    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--learning-rate", type=float, default=0.01)
     parser.add_argument("--num-workers", type=int, default=2)
-    parser.add_argument("--device", type=str, default="cuda:0", choices=["cpu", "cuda:0"])
+    parser.add_argument("--device", type=str, default="cuda:1", choices=["cpu", "cuda:0", "cuda:1"])
     parser.add_argument("--early-stop", action="store_true")
     parser.add_argument("--early-stop-patience", type=int, default=10)
     parser.add_argument("--early-stop-min-delta", type=float, default=0.0001)

@@ -3,9 +3,9 @@
 /scripts
 /baselines
 /__pycache__
-/results/models
+/results
 /logs
-
+/scripts
 # exclude large data files
 *.tar.gz
 *.zip
