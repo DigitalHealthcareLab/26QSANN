@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import argparse
 import copy
+import os
 import random
+import time
 from collections import Counter
 from pathlib import Path
+
 import numpy as np
 import torch
+from sklearn.metrics import accuracy_score, average_precision_score, precision_recall_fscore_support, roc_auc_score
 from torch import nn, optim
 from torch.utils.data import Dataset
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_fscore_support, average_precision_score
-import os
-import time
 
 from data_loader import build_standard_loaders
-from model import QuantumAnsatz, HybridQuantumClassifier
+from model import HybridQuantumClassifier, QuantumAnsatz
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -22,7 +23,6 @@ def build_parser() -> argparse.ArgumentParser:
     default_binary_root = Path(__file__).resolve().parent / "data" / "Binary_dataset"
     default_multi_root = Path(__file__).resolve().parent / "data" / "Multi_dataset"
 
-    # Data
     parser.add_argument("--image-size", type=int, default=28)
     parser.add_argument("--patch-size", type=int, default=4)
     parser.add_argument(
@@ -62,23 +62,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Optional per-label cap for MNIST/FMNIST/CIFAR10; used as per-class cap for PCam.",
     )
-    # Quantum ansatz
     parser.add_argument("--num-qubits", type=int, default=8)
     parser.add_argument("--vqc-layers", type=int, default=1)
     parser.add_argument("--reuploading", type=int, default=3, help="Number of times to repeat data encoding + VQC block.")
     parser.add_argument("--backend-device", type=str, default="gpu", choices=["cpu", "gpu"])
-    parser.add_argument("--use-torch-autograd", action="store_true", default=True)
-
-    # Data split (counts only)
+    parser.add_argument("--use-torch-autograd", action="store_true", default=False, help="Compatibility flag.")
     parser.add_argument("--train-count", type=int, default=1000, help="Number of training samples.")
     parser.add_argument("--val-count", type=int, default=100, help="Number of validation samples.")
     parser.add_argument("--test-count", type=int, default=100, help="Number of test samples.")
-
-    # Attention
     parser.add_argument("--attn-layers", type=int, default=1)
     parser.add_argument("--rbf-gamma", type=float, default=1.0)
-
-    # Classifier
     parser.add_argument(
         "--debug-logs",
         action="store_true",
@@ -95,8 +88,6 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="Save statevectors every N epochs (1 means every epoch).",
     )
-
-    # Training
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--learning-rate", type=float, default=0.01)
@@ -108,23 +99,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-pos-weight", action="store_true", help="Disable class-balanced pos_weight in BCE loss.")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
     parser.add_argument("--num-classes", type=int, default=10, help="If >0, override inferred class count.")
-
-    # Logging / checkpoints
     parser.add_argument("--log-dir", type=Path, default=Path("results/logs"))
     parser.add_argument("--model-dir", type=Path, default=Path("results/models"))
     parser.add_argument("--run-name", type=str, default="auto", help="If 'auto', name will encode dataset, count, and timestamp.")
-
     return parser
 
 
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-
     best_overall = {"auroc": -1.0, "run_name": None}
 
     def run_once(cfg: argparse.Namespace) -> dict:
-        # Reproducibility
         random.seed(cfg.seed)
         np.random.seed(cfg.seed)
         torch.manual_seed(cfg.seed)
@@ -180,9 +166,7 @@ def main() -> None:
         else:
             num_classes = cfg.num_classes if cfg.num_classes > 0 else inferred_classes
             if num_classes < 2:
-                raise ValueError(
-                    f"num_classes must be >=2 (inferred {inferred_classes}, override with --num-classes)."
-                )
+                raise ValueError(f"num_classes must be >=2 (inferred {inferred_classes}, override with --num-classes).")
             is_binary = False
         dataset_tag = cfg.dataset_choice
         if cfg.dataset_labels:
@@ -255,10 +239,7 @@ def main() -> None:
                 if g is None:
                     missing.append(name)
                 else:
-                    if g.is_sparse:
-                        vals = g.coalesce().values()
-                    else:
-                        vals = g
+                    vals = g.coalesce().values() if g.is_sparse else g
                     max_abs = vals.abs().max().item()
                     mean_abs = vals.abs().mean().item()
                     max_vals.append(max_abs)
@@ -280,7 +261,6 @@ def main() -> None:
                 raise ValueError(f"Expected sample with 3 dims [C,H,W], got {sample.shape}")
             return sample.shape[0]
 
-        # Support variable channel counts for standard datasets
         channel_count = infer_channels(train_set)
         patch_area = cfg.patch_size * cfg.patch_size
 
@@ -290,7 +270,7 @@ def main() -> None:
             vqc_layers=cfg.vqc_layers,
             reuploading=cfg.reuploading,
             backend_device=cfg.backend_device,
-            use_torch_autograd=cfg.use_torch_autograd,
+            use_torch_autograd=False,
         )
         ansatz_k = QuantumAnsatz(
             data_dim=channel_count * patch_area,
@@ -298,7 +278,7 @@ def main() -> None:
             vqc_layers=cfg.vqc_layers,
             reuploading=cfg.reuploading,
             backend_device=cfg.backend_device,
-            use_torch_autograd=cfg.use_torch_autograd,
+            use_torch_autograd=False,
         )
         ansatz_v = QuantumAnsatz(
             data_dim=channel_count * patch_area,
@@ -306,7 +286,7 @@ def main() -> None:
             vqc_layers=cfg.vqc_layers,
             reuploading=cfg.reuploading,
             backend_device=cfg.backend_device,
-            use_torch_autograd=cfg.use_torch_autograd,
+            use_torch_autograd=False,
         )
         model = HybridQuantumClassifier(
             image_size=cfg.image_size,
@@ -324,10 +304,7 @@ def main() -> None:
         )
         param_count = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"[run {cfg.run_name}] Trainable parameters: {param_count:,}")
-        if is_binary:
-            criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
-        else:
-            criterion = nn.CrossEntropyLoss()
+        criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor) if is_binary else nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate)
 
         best_val_loss = float("inf")
@@ -336,10 +313,7 @@ def main() -> None:
 
         def run_epoch(loader, train: bool, phase: str):
             nonlocal best_val_loss, patience_counter
-            if train:
-                model.train()
-            else:
-                model.eval()
+            model.train() if train else model.eval()
             total_loss = 0.0
             total = 0
             all_labels = []
@@ -348,18 +322,12 @@ def main() -> None:
             debug_logged = False
             for images, labels, _ in loader:
                 images = images.to(device)
-                if is_binary:
-                    labels = labels.float().to(device)
-                else:
-                    labels = labels.long().to(device)
+                labels = labels.float().to(device) if is_binary else labels.long().to(device)
                 if train:
                     optimizer.zero_grad()
                 with torch.set_grad_enabled(train):
                     out = model(images)
-                    if isinstance(out, tuple):
-                        outputs, attn_stats = out
-                    else:
-                        outputs, attn_stats = out, None
+                    outputs, attn_stats = out if isinstance(out, tuple) else (out, None)
                     loss = criterion(outputs, labels)
                     if train:
                         loss.backward()
@@ -405,7 +373,6 @@ def main() -> None:
                 if val_loss + cfg.early_stop_min_delta < best_val_loss:
                     best_val_loss = val_loss
                     patience_counter = 0
-                    # Save best model based on validation loss
                     best_model_state = copy.deepcopy(model.state_dict())
                 else:
                     patience_counter += 1
@@ -413,12 +380,10 @@ def main() -> None:
                         print(f"[{cfg.run_name}] Early stopping triggered.")
                         break
 
-        # Restore best model if early stopping was used
         if cfg.early_stop and best_model_state is not None:
             model.load_state_dict(best_model_state)
             print(f"[{cfg.run_name}] Restored best model from epoch with lowest validation loss.")
 
-        # Test evaluation
         model.eval()
         all_labels = []
         all_outputs = []
@@ -472,7 +437,7 @@ def main() -> None:
                 f"precision: {metrics['precision']:.4f} recall: {metrics['recall']:.4f} f1: {metrics['f1']:.4f} "
                 f"auprc: {metrics.get('auprc', float('nan')):.4f}"
             )
-            if not (metrics["auroc"] != metrics["auroc"]):  # not NaN
+            if not (metrics["auroc"] != metrics["auroc"]):
                 if metrics["auroc"] > best_overall["auroc"]:
                     best_overall["auroc"] = metrics["auroc"]
                     best_overall["run_name"] = cfg.run_name
